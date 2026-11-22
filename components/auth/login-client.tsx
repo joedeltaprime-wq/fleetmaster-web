@@ -1,7 +1,7 @@
 'use client'
 
 import Script from 'next/script'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { SignOutButton } from './sign-out-button'
 
@@ -25,9 +25,11 @@ interface LoginState {
 
 export function LoginClient({ googleClientId }: { googleClientId: string }) {
   const router = useRouter()
+  const googleButtonRef = useRef<HTMLDivElement>(null)
   const [scriptReady, setScriptReady] = useState(false)
   const [login, setLogin] = useState<LoginState | null>(null)
   const [error, setError] = useState('')
+  const [googleError, setGoogleError] = useState('')
   const [requesting, setRequesting] = useState(false)
 
   useEffect(() => {
@@ -48,17 +50,6 @@ export function LoginClient({ googleClientId }: { googleClientId: string }) {
     return () => { active = false }
   }, [router])
 
-  useEffect(() => {
-    const element = document.getElementById('google-login-button')
-    if (!scriptReady || !googleClientId || !window.google || !element) return
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      ux_mode: 'redirect',
-      login_uri: `${window.location.origin}/auth/google`,
-    })
-    window.google.accounts.id.renderButton(element, { theme: 'outline', size: 'large', width: 320 })
-  }, [googleClientId, scriptReady])
-
   async function requestAccess() {
     setError('')
     setRequesting(true)
@@ -76,6 +67,62 @@ export function LoginClient({ googleClientId }: { googleClientId: string }) {
 
   const waitingForSession = login === null && !error
   const needsAccess = login?.authenticated && !login.authorized
+  const showGoogleButton = !waitingForSession && !needsAccess && !login?.authorized && Boolean(googleClientId)
+
+  useEffect(() => {
+    if (!scriptReady || !showGoogleButton) return
+
+    let cancelled = false
+    let attempts = 0
+    let retryTimer = 0
+    let renderCheckTimer = 0
+
+    function initializeButton() {
+      if (cancelled) return
+      const googleId = window.google?.accounts?.id
+      if (!googleId) {
+        if (attempts < 30) {
+          attempts += 1
+          retryTimer = window.setTimeout(initializeButton, 100)
+          return
+        }
+        setGoogleError('Google sign-in loaded, but its button API did not become available. Check browser console errors or script/content blockers.')
+        return
+      }
+
+      const element = googleButtonRef.current
+      if (!element) {
+        setGoogleError('The Google sign-in button container is unavailable. Reload the page and try again.')
+        return
+      }
+
+      try {
+        element.replaceChildren()
+        googleId.initialize({
+          client_id: googleClientId,
+          ux_mode: 'redirect',
+          login_uri: `${window.location.origin}/auth/google`,
+        })
+        googleId.renderButton(element, { theme: 'outline', size: 'large', width: 320 })
+        setGoogleError('')
+        renderCheckTimer = window.setTimeout(() => {
+          if (!cancelled && !element.firstElementChild) {
+            setGoogleError('Google sign-in initialized but rendered no button. Verify GOOGLE_CLIENT_ID and the staging Authorized JavaScript origin in Google Cloud Console.')
+          }
+        }, 1000)
+      } catch (reason) {
+        const detail = reason instanceof Error ? ` ${reason.message}` : ''
+        setGoogleError(`Google sign-in could not be initialized.${detail} Verify the client ID and authorized staging origin.`)
+      }
+    }
+
+    initializeButton()
+    return () => {
+      cancelled = true
+      window.clearTimeout(retryTimer)
+      window.clearTimeout(renderCheckTimer)
+    }
+  }, [googleClientId, scriptReady, showGoogleButton])
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
@@ -83,8 +130,11 @@ export function LoginClient({ googleClientId }: { googleClientId: string }) {
         <Script
           src="https://accounts.google.com/gsi/client"
           strategy="afterInteractive"
-          onReady={() => setScriptReady(true)}
-          onError={() => setError('Google sign-in could not be loaded.')}
+          onReady={() => {
+            setGoogleError('')
+            setScriptReady(true)
+          }}
+          onError={() => setGoogleError('Google sign-in could not be loaded. Check the browser network console and staging Content Security Policy.')}
         />
       )}
       <section className="w-full max-w-md rounded-xl border bg-card p-7 shadow-lg">
@@ -93,12 +143,13 @@ export function LoginClient({ googleClientId }: { googleClientId: string }) {
         <p className="mt-2 text-sm text-muted-foreground">Use your approved Google account to access operations.</p>
 
         {waitingForSession && <p className="mt-6 text-sm text-muted-foreground">Checking session…</p>}
-        {!waitingForSession && !needsAccess && (
+        {!waitingForSession && !needsAccess && !login?.authorized && (
           <div className="mt-6">
             {googleClientId ? (
               <>
-                <div id="google-login-button" className="min-h-10" />
+                <div id="google-login-button" ref={googleButtonRef} className="min-h-10" />
                 {!scriptReady && <p className="mt-2 text-xs text-muted-foreground">Loading Google sign-in…</p>}
+                {googleError && <p role="alert" className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{googleError}</p>}
               </>
             ) : (
               <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning">Google sign-in is not configured for this environment.</p>

@@ -42,8 +42,12 @@ export async function POST(request: Request) {
     .bind(normalizeEmail(identity.email))
     .first<{ status: string }>()
   const target = account?.status === 'active' ? '/overview' : '/login'
-  const response = Response.redirect(new URL(target, request.url), 302)
-  response.headers.set('set-cookie', session.cookie)
-  response.headers.set('cache-control', 'no-store')
-  return response
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: new URL(target, request.url).toString(),
+      'Set-Cookie': session.cookie,
+      'Cache-Control': 'no-store',
+    },
+  })
 }
