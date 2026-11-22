@@ -86,7 +86,7 @@ export default function TrailerCostsPage() {
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
                     labelStyle={{ color: '#f1f5f9' }}
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, 'Yearly Cost']}
+                    formatter={(value) => [`$${Number(value ?? 0).toLocaleString()}`, 'Yearly Cost']}
                   />
                   <Bar dataKey="cost" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>

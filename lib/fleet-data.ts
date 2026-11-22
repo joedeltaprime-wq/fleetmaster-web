@@ -44,7 +44,7 @@ export interface Shop {
   trailerTire: number
   location: string
   website: string
-  paymentMethod: 'Cash' | 'Credit' | 'Check' | 'Net 30' | 'Comcheck'
+  paymentMethod: string
   stars: number
   isBlacklisted: boolean
   coordinates: { lat: number; lng: number }

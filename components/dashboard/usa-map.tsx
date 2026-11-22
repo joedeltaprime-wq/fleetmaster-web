@@ -40,9 +40,13 @@ export function USAMap({ fullHeight = false }: USAMapProps) {
     }
   }, [])
 
-  const handleMoveEnd = useCallback((position: { coordinates: [number, number]; zoom: number }) => {
-    setCenter(position.coordinates)
-    setZoom(position.zoom)
+  const handleMoveEnd = useCallback((position: { coordinates?: [number, number]; zoom?: number }) => {
+    if (position.coordinates) {
+      setCenter(position.coordinates)
+    }
+    if (position.zoom !== undefined) {
+      setZoom(position.zoom)
+    }
   }, [])
 
   return (
@@ -119,11 +123,8 @@ export function USAMap({ fullHeight = false }: USAMapProps) {
                   fill="#1e293b"
                   stroke="#334155"
                   strokeWidth={0.5}
-                  style={{
-                    default: { outline: 'none' },
-                    hover: { outline: 'none', fill: '#334155' },
-                    pressed: { outline: 'none' }
-                  }}
+                  className="transition-colors hover:fill-[#334155]"
+                  style={{ outline: 'none' }}
                 />
               ))
             }

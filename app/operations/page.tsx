@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Header } from '@/components/dashboard/header'
 import { MainContent } from '@/components/dashboard/main-content'
-import { fleetTrucks, statusColors, TruckStatus } from '@/lib/fleet-data'
+import { fleetTrucks, statusColors, TruckStatus, type FleetTruck } from '@/lib/fleet-data'
 import { 
   Search, 
   Filter, 
@@ -78,7 +78,7 @@ export default function OperationsPage() {
   
   // Inline editing state
   const [trucksData, setTrucksData] = useState(fleetTrucks)
-  const [editingCell, setEditingCell] = useState<{ truckId: number; field: string } | null>(null)
+  const [editingCell, setEditingCell] = useState<{ truckId: string; field: string } | null>(null)
   const [editValue, setEditValue] = useState<string>('')
   
   // Modal editing state
@@ -120,7 +120,7 @@ export default function OperationsPage() {
     )
   }
 
-  const handleCellClick = (truckId: number, field: string, currentValue: string | number | undefined) => {
+  const handleCellClick = (truckId: string, field: string, currentValue: string | number | null | undefined) => {
     setEditingCell({ truckId, field })
     setEditValue(String(currentValue || ''))
   }

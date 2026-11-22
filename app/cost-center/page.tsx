@@ -90,7 +90,7 @@ export default function CostCenterPage() {
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
                       labelStyle={{ color: '#f1f5f9' }}
-                      formatter={(value: number) => [`$${value.toLocaleString()}`, 'Cost']}
+                      formatter={(value) => [`$${Number(value ?? 0).toLocaleString()}`, 'Cost']}
                     />
                     <Line type="monotone" dataKey="cost" stroke="#3b82f6" strokeWidth={2} dot={{ fill: '#3b82f6' }} />
                   </LineChart>
@@ -110,7 +110,7 @@ export default function CostCenterPage() {
                     <Tooltip 
                       contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
                       labelStyle={{ color: '#f1f5f9' }}
-                      formatter={(value: number) => [`$${value.toLocaleString()}`, 'Yearly Cost']}
+                      formatter={(value) => [`$${Number(value ?? 0).toLocaleString()}`, 'Yearly Cost']}
                     />
                     <Bar dataKey="yearlyCost" fill="#ef4444" radius={[0, 4, 4, 0]} />
                   </BarChart>
