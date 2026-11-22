@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "test:auth": "node --test --experimental-strip-types tests/auth.test.mjs",
+    "test:data": "node --test --experimental-strip-types tests/operation-sheet.test.mjs",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"

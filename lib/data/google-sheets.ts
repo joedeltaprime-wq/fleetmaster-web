@@ -1,11 +1,11 @@
 import 'server-only'
-import { createSign } from 'node:crypto'
 import { cache } from 'react'
 import type { TireEvent, Unit } from './types'
 import { positionsFor } from './positions'
+import { createGoogleSheetsAccessToken, type GoogleServiceAccount } from './google-sheets-token'
 
 const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID || '1B_WlCQVIgl5p1UvxMJU9lO10G1NEE2s2K91Y-ZTrM98'
-type Account = {client_email: string;private_key: string;token_uri?: string}
+type Account = GoogleServiceAccount
 type Row = (string | number)[]
 
 export function liveConfigured() { return Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_B64 || (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY)) }
@@ -18,19 +18,7 @@ function credentials(): Account {
   if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) throw new Error('Missing Google service account credentials')
   return {client_email:process.env.GOOGLE_CLIENT_EMAIL,private_key:process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g,'\n')}
 }
-function base64url(value: string | Buffer) {return Buffer.from(value).toString('base64url')}
-const token = cache(async () => {
-  const c=credentials(), now=Math.floor(Date.now()/1000)
-  const header=base64url(JSON.stringify({alg:'RS256',typ:'JWT'}))
-  const claims=base64url(JSON.stringify({iss:c.client_email,scope:'https://www.googleapis.com/auth/spreadsheets.readonly',aud:c.token_uri||'https://oauth2.googleapis.com/token',iat:now,exp:now+3600}))
-  const data=`${header}.${claims}`
-  const sign=createSign('RSA-SHA256');sign.update(data);sign.end()
-  const assertion=`${data}.${base64url(sign.sign(c.private_key))}`
-  const response=await fetch(c.token_uri||'https://oauth2.googleapis.com/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({'grant_type':'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion}),cache:'no-store'})
-  const result=await response.json()
-  if (!response.ok || !result.access_token) throw new Error(`Google OAuth error (${response.status}): ${result.error || 'no token'}`)
-  return String(result.access_token)
-})
+const token = cache(async () => createGoogleSheetsAccessToken(credentials()))
 const sheetRows=async (sheet:string,lastCol:string): Promise<Row[]> => {
   const range=`'${sheet.replace(/'/g,"''")}'!A2:${lastCol}1008`
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(SPREADSHEET_ID)}/values/${encodeURIComponent(range)}?valueRenderOption=FORMATTED_VALUE`
