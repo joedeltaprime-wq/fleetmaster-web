@@ -30,7 +30,7 @@ export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Admin',
     items: [
-      { href: '/access', label: 'Access Management', icon: KeyRound, ready: false },
+      { href: '/access', label: 'Access Management', icon: KeyRound, ready: true },
       { href: '/settings', label: 'Settings', icon: Settings, ready: false },
     ],
   },
